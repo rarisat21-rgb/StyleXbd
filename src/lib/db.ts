@@ -266,7 +266,7 @@ export class StyleXDb {
             full_name: fullName,
             email,
             phone,
-            role: 'customer',
+            role: (email.toLowerCase() === 'rarisat21@gmail.com' || email.toLowerCase() === 'admin@stylex.com') ? 'admin' : 'customer',
             avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
             created_at: new Date().toISOString()
           };
@@ -275,7 +275,10 @@ export class StyleXDb {
             .from('users')
             .insert(newUser);
 
-          if (dbErr) console.error('Supabase users table insert error:', dbErr);
+          if (dbErr) {
+            console.error('Supabase users table insert error:', dbErr);
+            throw new Error(`Profile creation failed: ${dbErr.message}`);
+          }
           
           localStorage.setItem('stylex_current_session', JSON.stringify(newUser));
           return { user: newUser, error: null };
@@ -411,7 +414,11 @@ export class StyleXDb {
   static async saveCategory(cat: Partial<Category>): Promise<Category> {
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('categories').upsert(cat).select().single();
-      if (!error && data) return data;
+      if (error) {
+        console.error('Supabase saveCategory error:', error);
+        throw new Error(`Supabase Write Failed: ${error.message} (${error.code}). Ensure you are authenticated as Admin and that categories table allows this change.`);
+      }
+      if (data) return data;
     }
     const categories = getStored<Category[]>('categories', DEFAULT_CATEGORIES);
     if (!cat.id) {
@@ -435,7 +442,11 @@ export class StyleXDb {
 
   static async deleteCategory(id: string): Promise<void> {
     if (isSupabaseConfigured) {
-      await supabase.from('categories').delete().eq('id', id);
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) {
+        console.error('Supabase deleteCategory error:', error);
+        throw new Error(`Supabase Delete Failed: ${error.message} (${error.code}). Failed to purge category record.`);
+      }
     }
     const categories = getStored<Category[]>('categories', DEFAULT_CATEGORIES);
     setStored('categories', categories.filter(c => c.id !== id));
@@ -463,7 +474,11 @@ export class StyleXDb {
   static async saveProduct(prod: Partial<Product>): Promise<Product> {
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('products').upsert(prod).select().single();
-      if (!error && data) return data;
+      if (error) {
+        console.error('Supabase saveProduct error:', error);
+        throw new Error(`Supabase Write Failed: ${error.message} (${error.code}). Check if your logged-in user possesses the 'admin' role, if your row satisfies all schema restraints, and if RLS policies are deployed correctly.`);
+      }
+      if (data) return data;
     }
     const products = getStored<Product[]>('products', DEFAULT_PRODUCTS);
     if (!prod.id) {
@@ -503,7 +518,11 @@ export class StyleXDb {
 
   static async deleteProduct(id: string): Promise<void> {
     if (isSupabaseConfigured) {
-      await supabase.from('products').delete().eq('id', id);
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) {
+        console.error('Supabase deleteProduct error:', error);
+        throw new Error(`Supabase Delete Failed: ${error.message} (${error.code}). Failed to purge product record.`);
+      }
     }
     const products = getStored<Product[]>('products', DEFAULT_PRODUCTS);
     setStored('products', products.filter(p => p.id !== id));

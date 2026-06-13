@@ -44,6 +44,8 @@ export default function App() {
       ) : (
         <AdminPanel
           onBackToStore={() => setView('store')}
+          user={user}
+          onOpenAuth={() => setIsAuthOpen(true)}
         />
       )}
 

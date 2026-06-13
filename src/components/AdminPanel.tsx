@@ -6,15 +6,18 @@ import {
   HelpCircle, Image as ImageIcon, Star, Send, X, ArrowLeft, Eye
 } from 'lucide-react';
 import { StyleXDb } from '../lib/db';
-import { Product, Category, Order, OrderStatus, Review, Chat, ChatMessage, SiteSettings } from '../types';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { Product, Category, Order, OrderStatus, Review, Chat, ChatMessage, SiteSettings, UserProfile } from '../types';
 
 interface AdminPanelProps {
   onBackToStore: () => void;
+  user: UserProfile | null;
+  onOpenAuth: () => void;
 }
 
 type AdminTab = 'dashboard' | 'inventory' | 'orders' | 'banners' | 'reviews' | 'coupons' | 'campaigns' | 'lottery' | 'seo';
 
-export default function AdminPanel({ onBackToStore }: AdminPanelProps) {
+export default function AdminPanel({ onBackToStore, user, onOpenAuth }: AdminPanelProps) {
   // DB States
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -323,6 +326,60 @@ export default function AdminPanel({ onBackToStore }: AdminPanelProps) {
               <RefreshCw size={14} />
             </button>
           </div>
+        </div>
+
+        {/* ==================== LIVE DATABASE & AUTHENTICATION DIAGNOSTICS ==================== */}
+        <div className="mb-8 p-5 rounded-2xl border border-yellow-500/10 bg-gradient-to-r from-yellow-500/5 via-transparent to-purple-500/5 backdrop-blur-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5 flex-1 p-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-yellow-500/10 text-[#D4AF37] border border-yellow-500/20">
+                DATABASE MODE
+              </span>
+              {isSupabaseConfigured ? (
+                <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  🌐 PRODUCTION SUPABASE ACTIVE
+                </span>
+              ) : (
+                <span className="text-[10px] uppercase font-bold text-yellow-500 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
+                  💾 LOCAL STORAGE FALLBACK
+                </span>
+              )}
+            </div>
+            
+            <p className="text-[11px] text-neutral-400 max-w-2xl leading-relaxed">
+              {isSupabaseConfigured ? (
+                <>
+                  Your app is connected to live production tables under your configuration endpoint. 
+                  {!user ? (
+                    <span className="text-rose-400 block mt-1 font-semibold">
+                      ⚠️ UNAUTHENTICATED GUEST: You are currently log-in bypassed. Saving products will be rejected by Supabase RLS. Click "Authenticate Admin Email" and sign up or sign in as rarisat21@gmail.com!
+                    </span>
+                  ) : user.role !== 'admin' ? (
+                    <span className="text-amber-400 block mt-1 font-semibold">
+                      ⚠️ ACCESS ROLE: You are logged in as "{user.full_name}" but your security role is classified as <strong>'{user.role}'</strong>. Product uploads will be blocked by Supabase Row-Level Security.
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400 block mt-1 font-semibold">
+                      👑 VERIFIED ADMINISTRATOR: Logged in as "{user.full_name}" ({user.email}). You possess authorized CRUD rights on core products, categories, and orders.
+                    </span>
+                  )}
+                </>
+              ) : (
+                "Your application is running on client-side sandbox mode. All modifications are perfectly retained in your browser's private LocalStorage workspace."
+              )}
+            </p>
+          </div>
+
+          {isSupabaseConfigured && (!user || user.role !== 'admin') && (
+            <button
+              onClick={onOpenAuth}
+              className="px-5 py-2.5 rounded-xl border border-yellow-500/20 bg-yellow-500/10 text-yellow-500 font-bold uppercase tracking-widest text-[10px] hover:bg-yellow-500 hover:text-black hover:border-transparent active:scale-[0.98] transition-all cursor-pointer outline-none shrink-0"
+            >
+              🔐 Authenticate Admin Email
+            </button>
+          )}
         </div>
 
         {/* ==================== 1. DASHBOARD OVERVIEW ==================== */}
