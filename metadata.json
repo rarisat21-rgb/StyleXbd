@@ -1,0 +1,6 @@
+{
+  "name": "Style X",
+  "description": "Bespoke premium luxury fashion platform featuring glassmorphic designs, nationwide Cash on Delivery, WhatsApp order confirmations, and real-time support channels.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
